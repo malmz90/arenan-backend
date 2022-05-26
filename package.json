@@ -1,0 +1,24 @@
+{
+  "name": "arenan-backend",
+  "version": "1.0.0",
+  "description": "Arenankopia",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/malmz90/Arenan-backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/malmz90/Arenan-backend/issues"
+  },
+  "homepage": "https://github.com/malmz90/Arenan-backend#readme",
+  "dependencies": {
+    "express": "^4.18.1"
+  }
+}
