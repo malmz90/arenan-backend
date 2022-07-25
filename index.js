@@ -27,14 +27,28 @@ pool.getConnection().then((db) => {
         .status(400)
         .send({ success: false, error: 'Missing input parameters.' })
     }
+    try {
+      const queryResult = await db.query(
+        'INSERT INTO users(username,email,password) VALUES(?, ?, ? )',
+        [username, email, hashedPassword]
+      )
+      const id = Number(queryResult.insertId)
+      const user = {
+        id: id,
+        email: email,
+        username: username,
+      }
+      console.log(typeof user.id)
 
-    const { insertId: userId } = await db.query(
-      'INSERT INTO users(username,email,password) VALUES(?, ?, ? )',
-      [username, email, hashedPassword]
-    )
-
-    const [users] = await db.query('SELECT * FROM users WHERE id = ?', [userId])
-    res.json(users)
+      res.json(user)
+    } catch (error) {
+      console.log('errfart', { error })
+      let userError = 'Ett okänt fel inträffade.'
+      if (error.code === 'ER_DUP_ENTRY') {
+        userError = 'E-postadressen eller användarnamn används redan'
+      }
+      return res.json({ isAuthenticated: false, error: userError })
+    }
   })
 
   app.get('/api', async (req, res) => {
