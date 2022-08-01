@@ -1,9 +1,14 @@
 const express = require('express')
 const cors = require('cors')
+require('dotenv').config()
 const PORT = process.env.PORT || 4000
 const app = express()
 const mariadb = require('mariadb')
 const { genPassword } = require('./utils')
+const bcrypt = require('bcrypt')
+
+const jwt = require('jsonwebtoken')
+const { response } = require('express')
 
 const pool = mariadb.createPool({
   host: 'localhost',
@@ -13,11 +18,57 @@ const pool = mariadb.createPool({
   connectionLimit: 5,
   database: 'arenan',
 })
+
 app.use(cors())
 app.use(express.urlencoded({ limit: '100mb', extended: true }))
 app.use(express.json({ limit: '100mb' }))
 
 pool.getConnection().then((db) => {
+  app.post('/login', async (req, res) => {
+    const { email, password } = req.body
+    console.log(email)
+    try {
+      const users = await db.query(
+        `
+            SELECT
+              *
+            FROM 
+                users
+            WHERE
+                users.email = ?
+        `,
+        [email]
+      )
+
+      if (!users.length) {
+        return res.json({ message: 'No user found' })
+      }
+
+      const user = users[0]
+      const dbPassword = `$2b$${user.password.slice(4)}`
+      console.log(dbPassword)
+      console.log()
+
+      if (bcrypt.compareSync(password, dbPassword)) {
+        console.log('hej')
+        const token = jwt.sign(
+          { id: user.id },
+          process.env.ACCES_TOKEN_SECRET,
+          { expiresIn: '4h' }
+        )
+        res.cookie('plts_adm_token', token)
+        return res.json({
+          succes: true,
+          user: user,
+          token: 'Bearer ' + token,
+        })
+      } else return res.json({ message: 'password/username invalid' })
+    } catch (error) {
+      console.log(error)
+      return res.json({ err: error })
+    }
+  })
+
   app.post('/register', async function (req, res, next) {
     const hashedPassword = await genPassword(req.body.password)
 
