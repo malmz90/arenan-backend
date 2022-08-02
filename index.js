@@ -4,8 +4,9 @@ require('dotenv').config()
 const PORT = process.env.PORT || 4000
 const app = express()
 const mariadb = require('mariadb')
-const { genPassword } = require('./utils')
+const { genPassword, verifyJwt } = require('./utils')
 const bcrypt = require('bcrypt')
+const cookieParser = require('cookie-parser')
 
 const jwt = require('jsonwebtoken')
 const { response } = require('express')
@@ -22,11 +23,16 @@ const pool = mariadb.createPool({
 app.use(cors())
 app.use(express.urlencoded({ limit: '100mb', extended: true }))
 app.use(express.json({ limit: '100mb' }))
+app.use(cookieParser())
 
 pool.getConnection().then((db) => {
+  app.post('/protected', verifyJwt, (req, res) => {
+    res.status(200).json({ succes: true, msg: 'You are authenticated' })
+  })
+
   app.post('/login', async (req, res) => {
     const { email, password } = req.body
-    console.log(email)
+
     try {
       const users = await db.query(
         `
@@ -46,17 +52,14 @@ pool.getConnection().then((db) => {
 
       const user = users[0]
       const dbPassword = `$2b$${user.password.slice(4)}`
-      console.log(dbPassword)
-      console.log()
 
       if (bcrypt.compareSync(password, dbPassword)) {
-        console.log('hej')
         const token = jwt.sign(
           { id: user.id },
           process.env.ACCES_TOKEN_SECRET,
           { expiresIn: '4h' }
         )
-        res.cookie('plts_adm_token', token)
+        res.cookie('arenan_token', token)
         return res.json({
           succes: true,
           user: user,
