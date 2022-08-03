@@ -9,7 +9,12 @@ const bcrypt = require('bcrypt')
 const cookieParser = require('cookie-parser')
 
 const jwt = require('jsonwebtoken')
-const { response } = require('express')
+
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  credentials: true,
+  optionSuccessStatus: 200,
+}
 
 const pool = mariadb.createPool({
   host: 'localhost',
@@ -20,14 +25,33 @@ const pool = mariadb.createPool({
   database: 'arenan',
 })
 
-app.use(cors())
 app.use(express.urlencoded({ limit: '100mb', extended: true }))
 app.use(express.json({ limit: '100mb' }))
 app.use(cookieParser())
+app.use(cors(corsOptions))
 
 pool.getConnection().then((db) => {
-  app.post('/protected', verifyJwt, (req, res) => {
-    res.status(200).json({ succes: true, msg: 'You are authenticated' })
+  app.post('/protected', verifyJwt, async (req, res) => {
+    const { id } = req.jwt
+    try {
+      const user = await db.query(
+        `
+            SELECT
+                users.id,
+                users.username,
+                users.email,
+                users.password
+            FROM 
+                users
+            WHERE
+                users.id = ?
+        `,
+        [id]
+      )
+      res.json(user)
+    } catch (error) {
+      console.log(error)
+    }
   })
 
   app.post('/login', async (req, res) => {
