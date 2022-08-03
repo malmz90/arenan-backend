@@ -92,7 +92,6 @@ pool.getConnection().then((db) => {
         email: email,
         username: username,
       }
-      console.log(typeof user.id)
 
       res.json(user)
     } catch (error) {
