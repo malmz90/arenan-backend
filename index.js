@@ -54,6 +54,28 @@ pool.getConnection().then((db) => {
     }
   })
 
+  app.post('/gladiator', verifyJwt, async (req, res) => {
+    const { id } = req.jwt
+    const { race, strength, agility, health } = req.body
+    let calculatedHp = Math.ceil(health * 5)
+    try {
+      const { insertId } = await db.query(
+        `INSERT INTO gladiator (user_id,race,strength,agility,health,hp) VALUES (?,?,?,?,?,?)`,
+        [id, race, strength, agility, health, calculatedHp]
+      )
+      const newGladiator = await db.query(
+        'SELECT * FROM gladiator WHERE gladiator.id = ?',
+        [insertId]
+      )
+      res.json(newGladiator)
+    } catch (err) {
+      console.log(err)
+      res.status(500).send({
+        message: 'Something went wrong when trying to create new gladiator',
+      })
+    }
+  })
+
   app.post('/login', async (req, res) => {
     const { email, password } = req.body
 
