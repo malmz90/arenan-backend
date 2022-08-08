@@ -48,7 +48,7 @@ pool.getConnection().then((db) => {
         `,
         [id]
       )
-      res.json(user)
+      res.json({ succes: true, user })
     } catch (error) {
       console.log(error)
     }
