@@ -33,8 +33,6 @@ app.use(cors(corsOptions))
 pool.getConnection().then((db) => {
   app.post('/protected', verifyJwt, async (req, res) => {
     const { id } = req.jwt
-    const { user } = req.body
-    console.log('user', req.body)
     try {
       const user = await db.query(
         `
