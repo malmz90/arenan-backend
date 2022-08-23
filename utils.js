@@ -6,7 +6,6 @@ function genPassword(password) {
 
 function verifyJwt(req, res, next) {
   const token = req.cookies.arenan_token
-  console.log('tok', token)
   if (token) {
     try {
       const verification = jsonwebtoken.verify(
