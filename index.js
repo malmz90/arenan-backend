@@ -68,10 +68,39 @@ pool.getConnection().then((db) => {
     }
   })
 
-  // app.post('/buy/item', verifyJwt, async (req, res) => {
-  //   const { id } = req.jwt
-  //   const
-  // })
+  app.post('/buy/item', verifyJwt, async (req, res) => {
+    const { id: user_id } = req.jwt
+    const { itemId } = req.body
+
+    const [item] = await db.query('SELECT * FROM items WHERE id = ? ', [itemId])
+    if (!item) {
+      res.status(404).json({ succes: false, error: 'No item in database' })
+    }
+
+    const [row] = await db.query(
+      'SELECT gold FROM gladiator WHERE user_id = ?',
+      [user_id]
+    )
+    if (item.price > row.gold) {
+      res.status(402).json({ succes: false, message: 'insufficient funds' })
+    }
+
+    const newGoldAmount = row.gold - item.price
+
+    await db.query('UPDATE gladiator SET gold = ?', [newGoldAmount])
+
+    const [gladiatorRow] = await db.query(
+      'SELECT id FROM gladiator WHERE user_id = ?',
+      [user_id]
+    )
+
+    await db.query(
+      'INSERT into gladiator_items (gladiator_id,item_id) VALUES (?,?)',
+      [gladiatorRow.id, itemId]
+    )
+
+    res.json({ succes: true, item: item })
+  })
 
   app.post('/gladiator', verifyJwt, async (req, res) => {
     const { id } = req.jwt
