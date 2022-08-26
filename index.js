@@ -166,25 +166,24 @@ pool.getConnection().then((db) => {
     }
   })
 
-  app.post('/register', async function (req, res, next) {
+  app.post('/register', async function (req, res) {
     const hashedPassword = await genPassword(req.body.password)
-
-    const { username, email } = req.body
-    if (!username || !email) {
+    console.log(req.body)
+    const { email } = req.body
+    if (!email) {
       return res
         .status(400)
         .send({ success: false, error: 'Missing input parameters.' })
     }
     try {
       const queryResult = await db.query(
-        'INSERT INTO users(username,email,password) VALUES(?, ?, ? )',
-        [username, email, hashedPassword]
+        'INSERT INTO users(email,password) VALUES( ?, ? )',
+        [email, hashedPassword]
       )
       const id = Number(queryResult.insertId)
       const user = {
         id: id,
         email: email,
-        username: username,
       }
 
       res.json(user)
