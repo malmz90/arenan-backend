@@ -146,6 +146,12 @@ pool.getConnection().then((db) => {
       const user = users[0]
       const dbPassword = `$2b$${user.password.slice(4)}`
 
+      const gladiators = await db.query(
+        'SELECT * FROM gladiator WHERE user_id = ? ',
+        [user.id]
+      )
+      const gladiator = gladiators[0]
+
       if (bcrypt.compareSync(password, dbPassword)) {
         const token = jwt.sign(
           { id: user.id },
@@ -156,6 +162,7 @@ pool.getConnection().then((db) => {
         return res.json({
           succes: true,
           user: user,
+          gladiator: gladiator,
           token: 'Bearer ' + token,
         })
       } else return res.json({ message: 'password/username invalid' })
