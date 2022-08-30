@@ -38,7 +38,6 @@ pool.getConnection().then((db) => {
         `
             SELECT
                 users.id,
-                users.username,
                 users.email,
                 users.password
             FROM 
@@ -115,7 +114,7 @@ pool.getConnection().then((db) => {
         'SELECT * FROM gladiator WHERE gladiator.id = ?',
         [insertId]
       )
-      res.json(newGladiator)
+      res.json(newGladiator[0])
     } catch (err) {
       console.log(err)
       res.status(500).send({
