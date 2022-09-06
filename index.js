@@ -123,6 +123,11 @@ pool.getConnection().then((db) => {
     }
   })
 
+  app.get('/logout', (req, res) => {
+    res.cookie('arenan_token', '', { maxAge: 1 })
+    res.json()
+  })
+
   app.post('/login', async (req, res) => {
     const { email, password } = req.body
 
