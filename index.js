@@ -31,7 +31,7 @@ app.use(cookieParser())
 app.use(cors(corsOptions))
 
 pool.getConnection().then((db) => {
-  app.post('/protected', verifyJwt, async (req, res) => {
+  app.post('/verifyAuth', verifyJwt, async (req, res) => {
     const { id } = req.jwt
     try {
       const user = await db.query(
@@ -51,6 +51,7 @@ pool.getConnection().then((db) => {
     } catch (error) {
       console.log(error)
     }
+    db.release()
   })
   app.get('/items', verifyJwt, async (req, res) => {
     try {
@@ -65,11 +66,13 @@ pool.getConnection().then((db) => {
         message: 'Something went wrong when trying to fetch items',
       })
     }
+    db.release()
   })
 
-  app.post('/buy/item', verifyJwt, async (req, res) => {
+  app.post('/buy/item/:id', verifyJwt, async (req, res) => {
     const { id: user_id } = req.jwt
-    const { itemId } = req.body
+    const { id: itemId } = req.params
+    console.log(itemId)
 
     const [item] = await db.query('SELECT * FROM items WHERE id = ? ', [itemId])
     if (!item) {
@@ -99,16 +102,17 @@ pool.getConnection().then((db) => {
     )
 
     res.json({ succes: true, item: item })
+    db.release()
   })
 
   app.post('/gladiator', verifyJwt, async (req, res) => {
     const { id } = req.jwt
-    const { race, strength, agility, health } = req.body
+    const { name, race, strength, agility, health } = req.body
     let calculatedHp = Math.ceil(health * 5)
     try {
       const { insertId } = await db.query(
-        `INSERT INTO gladiator (user_id,race,strength,agility,health,hp) VALUES (?,?,?,?,?,?)`,
-        [id, race, strength, agility, health, calculatedHp]
+        `INSERT INTO gladiator (user_id,name,race,strength,agility,health,hp) VALUES (?,?,?,?,?,?,?)`,
+        [id, name, race, strength, agility, health, calculatedHp]
       )
       const newGladiator = await db.query(
         'SELECT * FROM gladiator WHERE gladiator.id = ?',
@@ -121,11 +125,13 @@ pool.getConnection().then((db) => {
         message: 'Something went wrong when trying to create new gladiator',
       })
     }
+    db.release()
   })
 
   app.get('/logout', (req, res) => {
     res.cookie('arenan_token', '', { maxAge: 1 })
     res.json()
+    db.release()
   })
 
   app.post('/login', async (req, res) => {
@@ -156,7 +162,7 @@ pool.getConnection().then((db) => {
         [user.id]
       )
       const gladiator = gladiators[0]
-
+      db.release()
       if (bcrypt.compareSync(password, dbPassword)) {
         const token = jwt.sign(
           { id: user.id },
@@ -206,6 +212,7 @@ pool.getConnection().then((db) => {
       }
       return res.json({ isAuthenticated: false, error: userError })
     }
+    db.release()
   })
 
   app.get('/api', async (req, res) => {
