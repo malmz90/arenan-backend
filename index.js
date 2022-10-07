@@ -107,12 +107,48 @@ pool.getConnection().then((db) => {
 
   app.post('/gladiator', verifyJwt, async (req, res) => {
     const { id } = req.jwt
-    const { name, race, strength, agility, health } = req.body
+    const {
+      name,
+      race,
+      gender,
+      strength,
+      agility,
+      health,
+      axe,
+      sword,
+      hammer,
+      staff,
+      shield,
+      spear,
+      chain,
+      initiative,
+      dodge,
+    } = req.body
+    console.log(req.body)
     let calculatedHp = Math.ceil(health * 5)
     try {
+      hammer, staff, shield, spear, chain, initiative, dodge
       const { insertId } = await db.query(
-        `INSERT INTO gladiator (user_id,name,race,strength,agility,health,hp) VALUES (?,?,?,?,?,?,?)`,
-        [id, name, race, strength, agility, health, calculatedHp]
+        `INSERT INTO gladiator (user_id,name,gender,axe,sword,hammer,staff,shield,spear,chain,initiative,dodge, race,strength,agility,health,hp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+          id,
+          name,
+          gender,
+          axe,
+          sword,
+          hammer,
+          staff,
+          shield,
+          spear,
+          chain,
+          initiative,
+          dodge,
+          race,
+          strength,
+          agility,
+          health,
+          calculatedHp,
+        ]
       )
       const newGladiator = await db.query(
         'SELECT * FROM gladiator WHERE gladiator.id = ?',
