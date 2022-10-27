@@ -31,6 +31,10 @@ app.use(cookieParser());
 app.use(cors(corsOptions));
 
 pool.getConnection().then((db) => {
+	app.get('/welcome', async (req, res) => {
+		res.send('Welcome');
+	});
+
 	app.post('/verifyAuth', verifyJwt, async (req, res) => {
 		const { id } = req.jwt;
 		try {
