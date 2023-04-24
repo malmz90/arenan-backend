@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const characterController = require("../controllers/characterController");
+const marketController = require("../controllers/marketController");
 const { verifyJwt } = require("../middleware/auth");
 
-router.post("/create", verifyJwt, characterController.createCharacter);
+router.post("/buy-item", verifyJwt, marketController.buyItem);
 
 module.exports = router;

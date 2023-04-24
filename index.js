@@ -20,11 +20,13 @@ app.use(cors(corsOptions));
 const authRoutes = require("./routes/authRoutes");
 const characterRoutes = require("./routes/characterRoutes");
 const itemRoutes = require("./routes/itemRoutes");
+const marketRoutes = require("./routes/marketRoutes");
 
 // Use route modules
 app.use("/auth", authRoutes);
 app.use("/character", characterRoutes);
 app.use("/item", itemRoutes);
+app.use("/market", marketRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);

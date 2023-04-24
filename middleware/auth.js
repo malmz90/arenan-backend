@@ -4,13 +4,9 @@ const verifyJwt = (req, res, next) => {
   const token = req.cookies.arenan_token;
   if (token) {
     try {
-      const verification = jsonwebtoken.verify(
-        token,
-        process.env.ACCES_TOKEN_SECRET,
-        {
-          algorithms: ["HS256"],
-        }
-      );
+      const verification = jwt.verify(token, process.env.ACCES_TOKEN_SECRET, {
+        algorithms: ["HS256"],
+      });
       req.jwt = verification;
       next();
     } catch (err) {
