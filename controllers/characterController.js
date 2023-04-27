@@ -4,8 +4,6 @@ const createCharacter = async (req, res) => {
   const { id } = req.jwt;
   const { name, class_id, strength, vitality, dexterity } = req.body;
 
-  console.log(req.body);
-
   try {
     const { insertId } = await db.query(
       `INSERT INTO characters (user_id, class_id, name, strength, vitality, dexterity) VALUES (?, ?, ?, ?, ?, ?)`,
