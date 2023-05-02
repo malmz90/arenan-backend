@@ -23,7 +23,13 @@ generateNewItem = async (req, res) => {
   const randomBaseItem = baseItems[randomIndex];
 
   const rarity = rollRarity(rarities);
-  console.log(rarity);
+
+  let itemId;
+  if (rarity.name === "common") {
+    itemId = randomBaseItem.id;
+  } else {
+    console.log("not common");
+  }
 
   res.json(randomBaseItem);
 };
