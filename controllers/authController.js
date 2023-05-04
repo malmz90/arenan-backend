@@ -30,10 +30,27 @@ const login = async (req, res) => {
       const token = jwt.sign({ id: user.id }, process.env.ACCES_TOKEN_SECRET, {
         expiresIn: "4h",
       });
+
+      // Fetch character data
+      const characters = await db.query(
+        `
+          SELECT
+            *
+          FROM
+            characters
+          WHERE
+            characters.user_id = ?
+        `,
+        [user.id]
+      );
+
+      const character = characters.length ? characters[0] : null;
+
       res.cookie("arenan_token", token);
       return res.json({
         success: true,
         user: user,
+        character: character, // Include character data in the response
         token: "Bearer " + token,
       });
     } else return res.json({ message: "password/username invalid" });
