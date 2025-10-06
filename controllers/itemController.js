@@ -11,7 +11,7 @@ const { rarities } = require("../config/itemRarities");
 getItems = async (req, res) => {
   try {
     const items = await db.query(
-      `SELECT * FROM items
+      `SELECT * FROM base_items
         `
     );
     res.json(items);

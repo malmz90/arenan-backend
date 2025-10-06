@@ -1,7 +1,7 @@
 const db = require("../config/db");
 
 const buyItem = async (req, res) => {
-  const { itemId } = req.body;
+  const { id: itemId } = req.body;
   const userId = req.jwt.id;
 
   try {

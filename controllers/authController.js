@@ -45,7 +45,7 @@ const login = async (req, res) => {
       );
 
       const character = characters.length ? characters[0] : null;
-
+      console.log(character);
       res.cookie("arenan_token", token);
       return res.json({
         success: true,
