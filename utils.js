@@ -258,6 +258,147 @@ async function getCharacterInventory(characterId) {
   return inventoryItems;
 }
 
+/**
+ * Calculate character's total stats including base stats and equipment bonuses
+ */
+async function getCharacterStats(characterId) {
+  // Get base character stats
+  const character = await db.query("SELECT * FROM characters WHERE id = ?", [
+    characterId,
+  ]);
+
+  if (character.length === 0) {
+    throw new Error("Character not found");
+  }
+
+  const char = character[0];
+
+  // Initialize stats with base values
+  let stats = {
+    strength: char.strength || 0,
+    vitality: char.vitality || 0,
+    dexterity: char.dexterity || 0,
+    bonusDamage: 0,
+    bonusDefense: 0,
+    bonusHP: 0,
+  };
+
+  // Get equipped items and their affixes
+  const equipment = await getCharacterEquipment(characterId);
+
+  // Calculate bonuses from equipment
+  for (const slot in equipment) {
+    const item = equipment[slot];
+    if (item && item.affixes) {
+      for (const affix of item.affixes) {
+        // Apply affixes based on their type
+        switch (affix.affix_type) {
+          case "strength":
+            stats.strength += affix.value;
+            break;
+          case "vitality":
+            stats.vitality += affix.value;
+            break;
+          case "dexterity":
+            stats.dexterity += affix.value;
+            break;
+          case "damage":
+            stats.bonusDamage += affix.value;
+            break;
+          case "defense":
+            stats.bonusDefense += affix.value;
+            break;
+          case "hp":
+            stats.bonusHP += affix.value;
+            break;
+        }
+      }
+    }
+
+    // Add weapon damage if equipped
+    if (slot === "main_hand" && item) {
+      stats.weaponMinDamage = item.min_dmg || 0;
+      stats.weaponMaxDamage = item.max_dmg || 0;
+    }
+  }
+
+  // Calculate derived stats
+  const maxHP = calculateMaxHP(stats.vitality, stats.bonusHP);
+  const damage = calculateCharacterDamage(
+    stats.strength,
+    stats.dexterity,
+    stats.weaponMinDamage || 0,
+    stats.weaponMaxDamage || 0,
+    stats.bonusDamage
+  );
+  const defense = calculateCharacterDefense(stats.vitality, stats.bonusDefense);
+
+  return {
+    ...stats,
+    maxHP,
+    damage,
+    defense,
+  };
+}
+
+/**
+ * Calculate max HP based on vitality
+ * Formula: 100 base HP + (vitality * 10) + bonus HP
+ */
+function calculateMaxHP(vitality, bonusHP = 0) {
+  return 100 + vitality * 10 + bonusHP;
+}
+
+/**
+ * Calculate character damage range
+ * Returns average damage for simplicity
+ */
+function calculateCharacterDamage(
+  strength,
+  dexterity,
+  weaponMinDmg = 0,
+  weaponMaxDmg = 0,
+  bonusDamage = 0
+) {
+  // Base damage from stats (strength gives more damage than dexterity)
+  const statDamage = strength * 2 + dexterity * 1;
+
+  // Weapon damage (average of min and max)
+  const weaponDamage = weaponMinDmg > 0 ? (weaponMinDmg + weaponMaxDmg) / 2 : 0;
+
+  // Total damage
+  const totalDamage = statDamage + weaponDamage + bonusDamage;
+
+  return Math.max(1, Math.floor(totalDamage)); // Minimum 1 damage
+}
+
+/**
+ * Calculate character defense
+ * Defense reduces incoming damage
+ */
+function calculateCharacterDefense(vitality, bonusDefense = 0) {
+  // Each point of vitality gives 0.5 defense
+  const vitalityDefense = vitality * 0.5;
+
+  return Math.floor(vitalityDefense + bonusDefense);
+}
+
+/**
+ * Calculate actual damage dealt after defense
+ * Formula: damage - (defense * 0.5)
+ * Minimum damage is always at least 1
+ */
+function calculateDamage(attackerDamage, defenderDefense) {
+  const damageReduction = defenderDefense * 0.5;
+  const actualDamage = attackerDamage - damageReduction;
+
+  // Add some randomness (±10%)
+  const randomFactor = 0.9 + Math.random() * 0.2;
+  const finalDamage = Math.floor(actualDamage * randomFactor);
+
+  return Math.max(1, finalDamage); // Always deal at least 1 damage
+}
+
 module.exports = {
   genPassword,
   rollRarity,
@@ -270,4 +411,9 @@ module.exports = {
   unequipItem,
   getCharacterEquipment,
   getCharacterInventory,
+  getCharacterStats,
+  calculateMaxHP,
+  calculateCharacterDamage,
+  calculateCharacterDefense,
+  calculateDamage,
 };

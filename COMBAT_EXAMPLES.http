@@ -1,0 +1,82 @@
+### Combat System - Example API Requests
+### Use this file with REST Client extension in VS Code or similar tools
+
+# Replace these variables with your actual values
+@baseUrl = http://localhost:4000
+@token = YOUR_JWT_TOKEN_HERE
+@opponentId = 2
+
+# Note: The cookie name is "arenan_token" - you get this after logging in
+
+###############################################
+# 1. Get All Characters (Find Opponents)
+###############################################
+
+GET {{baseUrl}}/character/all
+Content-Type: application/json
+
+
+###############################################
+# 2. Get Your Character Stats
+###############################################
+
+GET {{baseUrl}}/character/stats
+Content-Type: application/json
+Cookie: arenan_token={{token}}
+
+
+###############################################
+# 3. Fight! (Combat runs until someone wins)
+###############################################
+
+POST {{baseUrl}}/combat/fight
+Content-Type: application/json
+Cookie: arenan_token={{token}}
+
+{
+  "opponentCharacterId": {{opponentId}}
+}
+
+
+###############################################
+# Additional Character Endpoints
+###############################################
+
+# Get Equipment
+GET {{baseUrl}}/character/equipment
+Content-Type: application/json
+Cookie: arenan_token={{token}}
+
+###
+
+# Get Inventory
+GET {{baseUrl}}/character/inventory
+Content-Type: application/json
+Cookie: arenan_token={{token}}
+
+###
+
+# Generate New Item (for testing with items)
+POST {{baseUrl}}/item/generate
+Content-Type: application/json
+Cookie: arenan_token={{token}}
+
+
+###############################################
+# Example: Full Combat Test Flow
+###############################################
+
+# Step 1: Get all characters to find opponent
+# GET {{baseUrl}}/character/all
+
+# Step 2: Note the opponent ID you want to fight
+
+# Step 3: Check your stats before combat
+# GET {{baseUrl}}/character/stats
+
+# Step 4: Fight!
+# POST {{baseUrl}}/combat/fight with opponentCharacterId
+
+# Step 5: Check your stats again to see rewards
+# GET {{baseUrl}}/character/stats
+

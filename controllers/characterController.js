@@ -4,6 +4,7 @@ const {
   unequipItem,
   getCharacterEquipment,
   getCharacterInventory,
+  getCharacterStats,
 } = require("../utils");
 
 const createCharacter = async (req, res) => {
@@ -181,10 +182,63 @@ const getInventory = async (req, res) => {
   }
 };
 
+const getAllCharacters = async (req, res) => {
+  try {
+    const characters = await db.query(
+      `SELECT c.id, c.name, c.level, c.experience, c.strength, c.vitality, c.dexterity, c.gold, cl.name as class_name 
+       FROM characters c 
+       LEFT JOIN classes cl ON c.class_id = cl.id 
+       ORDER BY c.level DESC, c.name ASC`
+    );
+    res.json(characters);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({
+      message: "Something went wrong when trying to fetch characters",
+    });
+  }
+};
+
+const getStats = async (req, res) => {
+  const userId = req.jwt.id;
+
+  try {
+    // Get the character associated with the user
+    const characters = await db.query(
+      "SELECT * FROM characters WHERE user_id = ?",
+      [userId]
+    );
+    if (characters.length === 0) {
+      return res.status(404).json({ message: "Character not found" });
+    }
+
+    const character = characters[0];
+    const stats = await getCharacterStats(character.id);
+
+    res.json({
+      character: {
+        id: character.id,
+        name: character.name,
+        level: character.level,
+        experience: character.experience,
+        gold: character.gold,
+      },
+      stats,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({
+      message: "Something went wrong when trying to fetch character stats",
+    });
+  }
+};
+
 module.exports = {
   createCharacter,
   handleEquipItem,
   handleUnequipItem,
   getEquipment,
   getInventory,
+  getAllCharacters,
+  getStats,
 };
