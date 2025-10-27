@@ -222,6 +222,8 @@ const getStats = async (req, res) => {
         level: character.level,
         experience: character.experience,
         gold: character.gold,
+        max_rounds: character.max_rounds || 0,
+        current_rounds: character.current_rounds || 0,
       },
       stats,
     });

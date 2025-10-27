@@ -45,6 +45,8 @@ const fight = async (req, res) => {
         currentHP: attackerStats.maxHP,
         damage: attackerStats.damage,
         defense: attackerStats.defense,
+        maxRounds: attacker.max_rounds || 0,
+        currentRounds: attacker.current_rounds || 0,
       },
       opponent: {
         id: opponent.id,
@@ -54,6 +56,8 @@ const fight = async (req, res) => {
         currentHP: opponentStats.maxHP,
         damage: opponentStats.damage,
         defense: opponentStats.defense,
+        maxRounds: opponent.max_rounds || 0,
+        currentRounds: opponent.current_rounds || 0,
       },
       turn: 1,
       log: [],
@@ -61,9 +65,24 @@ const fight = async (req, res) => {
       finished: false,
     };
 
-    // Simulate combat until one character is defeated (max 100 turns to prevent infinite loops)
-    let maxTurns = 100;
-    while (!combatState.finished && combatState.turn <= maxTurns) {
+    // Simulate combat until one character is defeated or attacker runs out of rounds
+    while (!combatState.finished) {
+      // Check rounds for attacker (player). If no rounds, attacker loses
+      if ((combatState.attacker.currentRounds || 0) <= 0) {
+        combatState.finished = true;
+        combatState.winner = combatState.opponent;
+        combatState.log.push(
+          `${combatState.attacker.name} has no rounds left and loses!`
+        );
+        break;
+      }
+
+      // Consume 1 round from attacker at the start of each round
+      combatState.attacker.currentRounds = Math.max(
+        0,
+        (combatState.attacker.currentRounds || 0) - 1
+      );
+
       // Attacker attacks
       const attackerDamage = calculateDamage(
         combatState.attacker.damage,
@@ -122,6 +141,17 @@ const fight = async (req, res) => {
       combatState.log.push(
         `${attacker.name} gained ${expGained} experience and ${goldGained} gold!`
       );
+    }
+
+    // Persist remaining rounds for attacker
+    try {
+      await db.query("UPDATE characters SET current_rounds = ? WHERE id = ?", [
+        combatState.attacker.currentRounds || 0,
+        attacker.id,
+      ]);
+    } catch (e) {
+      // Non-fatal if this update fails; combat result still returns
+      console.error("Failed to persist current_rounds:", e);
     }
 
     res.json({
