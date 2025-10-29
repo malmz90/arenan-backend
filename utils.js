@@ -399,6 +399,19 @@ function calculateDamage(attackerDamage, defenderDefense) {
   return Math.max(1, finalDamage); // Always deal at least 1 damage
 }
 
+/**
+ * Experience requirement for the NEXT level based on current level
+ * Exponential growth starting at 100 and scaling by 1.5x per level.
+ * Example: level 1 -> 100, level 2 -> 150, level 3 -> 225, etc.
+ * Adjust BASE_XP and GROWTH_RATE to tune the curve.
+ */
+function getExpForLevel(level) {
+  const BASE_XP = 100;
+  const GROWTH_RATE = 1.5;
+  if (!level || level < 1) return BASE_XP;
+  return Math.floor(BASE_XP * Math.pow(GROWTH_RATE, level - 1));
+}
+
 module.exports = {
   genPassword,
   rollRarity,
@@ -416,4 +429,5 @@ module.exports = {
   calculateCharacterDamage,
   calculateCharacterDefense,
   calculateDamage,
+  getExpForLevel,
 };

@@ -1,5 +1,9 @@
 const db = require("../config/db");
-const { getCharacterStats, calculateDamage } = require("../utils");
+const {
+  getCharacterStats,
+  calculateDamage,
+  getExpForLevel,
+} = require("../utils");
 
 /**
  * Execute combat between two characters
@@ -126,18 +130,55 @@ const fight = async (req, res) => {
       combatState.turn++;
     }
 
-    // Award experience and gold if player won
+    // Award experience and gold if player won, and process level-ups
     let rewards = null;
     if (combatState.winner && combatState.winner.id === attacker.id) {
       const expGained = Math.floor(opponent.level * 50);
       const goldGained = Math.floor(opponent.level * 10);
 
+      // Increment exp and gold
       await db.query(
         "UPDATE characters SET experience = experience + ?, gold = gold + ? WHERE id = ?",
         [expGained, goldGained, attacker.id]
       );
 
-      rewards = { experience: expGained, gold: goldGained };
+      // Fetch current state to evaluate level ups
+      const rows = await db.query(
+        "SELECT level, experience, COALESCE(unspent_stat_points, 0) AS unspent_stat_points FROM characters WHERE id = ?",
+        [attacker.id]
+      );
+      let currentLevel = rows[0].level || 1;
+      let currentExp = rows[0].experience || 0;
+      let unspent = rows[0].unspent_stat_points || 0;
+
+      let levelsGained = 0;
+      let nextReq = getExpForLevel(currentLevel);
+      while (currentExp >= nextReq) {
+        currentExp -= nextReq;
+        currentLevel += 1;
+        levelsGained += 1;
+        unspent += 20; // Award 20 points per level
+        nextReq = getExpForLevel(currentLevel);
+      }
+
+      if (levelsGained > 0) {
+        await db.query(
+          "UPDATE characters SET level = ?, experience = ?, unspent_stat_points = ? WHERE id = ?",
+          [currentLevel, currentExp, unspent, attacker.id]
+        );
+        combatState.log.push(
+          `${attacker.name} leveled up ${levelsGained} level(s)! +${
+            levelsGained * 20
+          } stat points.`
+        );
+      }
+
+      rewards = {
+        experience: expGained,
+        gold: goldGained,
+        levelsGained,
+        statPointsGained: levelsGained * 20,
+      };
       combatState.log.push(
         `${attacker.name} gained ${expGained} experience and ${goldGained} gold!`
       );

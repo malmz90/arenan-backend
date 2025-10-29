@@ -5,6 +5,7 @@ const {
   getCharacterEquipment,
   getCharacterInventory,
   getCharacterStats,
+  getExpForLevel,
 } = require("../utils");
 
 const createCharacter = async (req, res) => {
@@ -215,6 +216,10 @@ const getStats = async (req, res) => {
     const character = characters[0];
     const stats = await getCharacterStats(character.id);
 
+    const unspent = character.unspent_stat_points || 0;
+    const nextReq = getExpForLevel(character.level || 1);
+    const expToNext = Math.max(0, nextReq - (character.experience || 0));
+
     res.json({
       character: {
         id: character.id,
@@ -224,6 +229,9 @@ const getStats = async (req, res) => {
         gold: character.gold,
         max_rounds: character.max_rounds || 0,
         current_rounds: character.current_rounds || 0,
+        unspent_stat_points: unspent,
+        next_level_experience: nextReq,
+        exp_to_next_level: expToNext,
       },
       stats,
     });
@@ -231,6 +239,63 @@ const getStats = async (req, res) => {
     console.log(err);
     res.status(500).send({
       message: "Something went wrong when trying to fetch character stats",
+    });
+  }
+};
+
+const allocateStats = async (req, res) => {
+  const userId = req.jwt.id;
+  const { strength = 0, vitality = 0, dexterity = 0 } = req.body || {};
+
+  try {
+    // Get the character associated with the user
+    const characters = await db.query(
+      "SELECT * FROM characters WHERE user_id = ?",
+      [userId]
+    );
+    if (characters.length === 0) {
+      return res.status(404).json({ message: "Character not found" });
+    }
+
+    const character = characters[0];
+    const unspent = character.unspent_stat_points || 0;
+
+    const s = Number(strength) || 0;
+    const v = Number(vitality) || 0;
+    const d = Number(dexterity) || 0;
+    if (s < 0 || v < 0 || d < 0) {
+      return res
+        .status(400)
+        .json({ message: "Stat points must be non-negative" });
+    }
+    const total = s + v + d;
+    if (total === 0) {
+      return res.status(400).json({ message: "No stat points allocated" });
+    }
+    if (total > unspent) {
+      return res
+        .status(400)
+        .json({ message: "Allocated points exceed available points" });
+    }
+
+    await db.query(
+      "UPDATE characters SET strength = strength + ?, vitality = vitality + ?, dexterity = dexterity + ?, unspent_stat_points = ? WHERE id = ?",
+      [s, v, d, unspent - total, character.id]
+    );
+
+    const updated = await db.query(
+      "SELECT id, name, level, experience, gold, max_rounds, current_rounds, COALESCE(unspent_stat_points,0) AS unspent_stat_points, strength, vitality, dexterity FROM characters WHERE id = ?",
+      [character.id]
+    );
+
+    res.json({
+      message: "Stats allocated successfully",
+      character: updated[0],
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({
+      message: "Something went wrong when allocating stats",
     });
   }
 };
@@ -243,4 +308,5 @@ module.exports = {
   getInventory,
   getAllCharacters,
   getStats,
+  allocateStats,
 };
